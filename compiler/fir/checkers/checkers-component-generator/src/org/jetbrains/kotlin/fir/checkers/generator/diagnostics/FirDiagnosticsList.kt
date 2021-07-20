@@ -943,6 +943,11 @@ object DIAGNOSTICS_LIST : DiagnosticList("FirErrors") {
         val INITIALIZATION_BEFORE_DECLARATION by error<KtExpression>() {
             parameter<Symbol>("property")
         }
+        val SENSELESS_COMPARISON by warning<KtBinaryExpression> {
+            parameter<FirExpression>("expression")
+            parameter<Boolean>("compareResult")
+        }
+        val SENSELESS_NULL_IN_WHEN by warning<KtElement>()
     }
 
     val NULLABILITY by object : DiagnosticGroup("Nullability") {
