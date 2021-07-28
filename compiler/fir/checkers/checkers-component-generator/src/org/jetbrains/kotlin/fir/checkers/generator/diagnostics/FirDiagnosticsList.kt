@@ -943,7 +943,7 @@ object DIAGNOSTICS_LIST : DiagnosticList("FirErrors") {
         val INITIALIZATION_BEFORE_DECLARATION by error<KtExpression>() {
             parameter<Symbol>("property")
         }
-        val SENSELESS_COMPARISON by warning<KtBinaryExpression> {
+        val SENSELESS_COMPARISON by warning<KtExpression> {
             parameter<FirExpression>("expression")
             parameter<Boolean>("compareResult")
         }
