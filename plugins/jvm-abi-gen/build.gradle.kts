@@ -17,12 +17,12 @@ dependencies {
 
     compileOnly(intellijCoreDep()) { includeJars("intellij-core", "asm-all", rootProject = rootProject) }
 
+    testRuntimeOnly(intellijCoreDep()) { includeJars("intellij-core") }
     testRuntimeOnly(project(":kotlin-compiler"))
 
     testApi(commonDep("junit:junit"))
     testApi(projectTests(":compiler:tests-common"))
     testApi(projectTests(":compiler:incremental-compilation-impl"))
-    testRuntimeOnly(intellijCoreDep())
 }
 
 sourceSets {
