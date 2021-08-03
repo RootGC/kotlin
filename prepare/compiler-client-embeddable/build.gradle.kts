@@ -17,7 +17,7 @@ dependencies {
     embedded(project(":compiler:cli-common")) { isTransitive = false }
     embedded(project(":daemon-common")) { isTransitive = false }
     embedded(project(":daemon-common-new")) { isTransitive = false }
-    embedded(project(":kotlin-daemon-client"))
+    embedded(project(":kotlin-daemon-client")) { isTransitive = false }
     
     testApi(project(":compiler:cli-common"))
     testApi(project(":daemon-common"))
