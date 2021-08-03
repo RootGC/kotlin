@@ -81,7 +81,7 @@ private fun Project.compilerShadowJar(taskName: String, body: ShadowJar.() -> Un
         }
     }
 
-    dependencies.add(compilerJar.name, dependencies.project(":kotlin-compiler"))
+    dependencies.add(compilerJar.name, dependencies.project(":kotlin-compiler")) { isTransitive = false }
 
     return tasks.register<ShadowJar>(taskName) {
         destinationDirectory.set(project.file(File(buildDir, "libs")))
