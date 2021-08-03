@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.fir.resolve.ScopeSession
 import org.jetbrains.kotlin.fir.resolve.createFunctionalType
 import org.jetbrains.kotlin.fir.resolve.fullyExpandedType
 import org.jetbrains.kotlin.fir.resolve.inference.*
+import org.jetbrains.kotlin.fir.resolve.isTypeMismatchDueToNullability
 import org.jetbrains.kotlin.fir.resolve.transformers.body.resolve.resultType
 import org.jetbrains.kotlin.fir.resolve.transformers.ensureResolvedTypeDeclaration
 import org.jetbrains.kotlin.fir.returnExpressions
@@ -31,7 +32,6 @@ import org.jetbrains.kotlin.resolve.calls.inference.ConstraintSystemBuilder
 import org.jetbrains.kotlin.resolve.calls.inference.addSubtypeConstraintIfCompatible
 import org.jetbrains.kotlin.resolve.calls.inference.model.SimpleConstraintSystemConstraintPosition
 import org.jetbrains.kotlin.types.AbstractTypeChecker
-import org.jetbrains.kotlin.types.SmartcastStability
 import org.jetbrains.kotlin.types.model.CaptureStatus
 import org.jetbrains.kotlin.types.model.TypeSystemCommonSuperTypesContext
 import org.jetbrains.kotlin.utils.addToStdlib.runIf
@@ -332,18 +332,6 @@ private fun Candidate.captureTypeFromExpressionOrNull(argumentType: ConeKotlinTy
     ) as? ConeKotlinType
 }
 
-fun isArgumentTypeMismatchDueToNullability(
-    argumentType: ConeKotlinType,
-    actualExpectedType: ConeKotlinType,
-    typeContext: ConeTypeContext
-): Boolean {
-    return AbstractTypeChecker.isSubtypeOf(
-        typeContext,
-        argumentType,
-        actualExpectedType.withNullability(ConeNullability.NULLABLE, typeContext)
-    )
-}
-
 private fun checkApplicabilityForArgumentType(
     csBuilder: ConstraintSystemBuilder,
     argument: FirExpression,
@@ -383,7 +371,7 @@ private fun checkApplicabilityForArgumentType(
             argument,
             // Reaching here means argument types mismatch, and we want to record whether it's due to the nullability by checking a subtype
             // relation with nullable expected type.
-            isArgumentTypeMismatchDueToNullability(argumentType, actualExpectedType, context.session.typeContext)
+            context.session.typeContext.isTypeMismatchDueToNullability(argumentType, actualExpectedType)
         )
     }
 
@@ -396,10 +384,19 @@ private fun checkApplicabilityForArgumentType(
 
     if (!csBuilder.addSubtypeConstraintIfCompatible(argumentType, expectedType, position)) {
         val smartcastExpression = argument as? FirExpressionWithSmartcast
-        if (smartcastExpression != null && smartcastExpression.smartcastStability != SmartcastStability.STABLE_VALUE) {
+        if (smartcastExpression != null && !smartcastExpression.isStable) {
             val unstableType = smartcastExpression.smartcastType.coneType
             if (csBuilder.addSubtypeConstraintIfCompatible(unstableType, expectedType, position)) {
-                sink.reportDiagnostic(UnstableSmartCast(smartcastExpression, expectedType))
+                sink.reportDiagnostic(
+                    UnstableSmartCast(
+                        smartcastExpression,
+                        expectedType,
+                        context.session.typeContext.isTypeMismatchDueToNullability(
+                            argumentType,
+                            expectedType
+                        )
+                    )
+                )
                 return
             }
         }

@@ -6,7 +6,6 @@
 package org.jetbrains.kotlin.fir.resolve.calls
 
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.FirVisibilityChecker
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.utils.isInfix
@@ -15,6 +14,7 @@ import org.jetbrains.kotlin.fir.declarations.utils.modality
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.references.FirSuperReference
 import org.jetbrains.kotlin.fir.resolve.inference.*
+import org.jetbrains.kotlin.fir.resolve.isTypeMismatchDueToNullability
 import org.jetbrains.kotlin.fir.resolve.toSymbol
 import org.jetbrains.kotlin.fir.scopes.FirUnstableSmartcastTypeScope
 import org.jetbrains.kotlin.fir.symbols.SyntheticSymbol
@@ -23,13 +23,14 @@ import org.jetbrains.kotlin.fir.symbols.impl.FirCallableSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
+import org.jetbrains.kotlin.fir.typeContext
 import org.jetbrains.kotlin.fir.types.*
+import org.jetbrains.kotlin.fir.visibilityChecker
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.calls.tasks.ExplicitReceiverKind.*
 import org.jetbrains.kotlin.types.AbstractNullabilityChecker
-import org.jetbrains.kotlin.types.SmartcastStability
 
 abstract class ResolutionStage {
     abstract suspend fun check(candidate: Candidate, callInfo: CallInfo, sink: CheckerSink, context: ResolutionContext)
@@ -117,10 +118,19 @@ object CheckDispatchReceiver : ResolutionStage() {
 
         if (explicitReceiverExpression is FirExpressionWithSmartcast &&
             explicitReceiverExpression !is FirExpressionWithSmartcastToNull &&
-            explicitReceiverExpression.smartcastStability != SmartcastStability.STABLE_VALUE &&
+            !explicitReceiverExpression.isStable &&
             (isCandidateFromUnstableSmartcast || isReceiverNullable)
         ) {
-            sink.yieldDiagnostic(UnstableSmartCast(explicitReceiverExpression, explicitReceiverExpression.smartcastType.coneType))
+            sink.yieldDiagnostic(
+                UnstableSmartCast(
+                    explicitReceiverExpression,
+                    explicitReceiverExpression.smartcastType.coneType,
+                    context.session.typeContext.isTypeMismatchDueToNullability(
+                        explicitReceiverExpression.originalType.coneType,
+                        explicitReceiverExpression.smartcastType.coneType
+                    )
+                )
+            )
         } else if (isReceiverNullable) {
             sink.yieldDiagnostic(UnsafeCall(dispatchReceiverValueType))
         }
