@@ -5,6 +5,8 @@
 
 package org.jetbrains.kotlin.idea.frontend.api.fir.components
 
+import org.jetbrains.kotlin.fir.analysis.checkers.ConeTypeCompatibilityChecker
+import org.jetbrains.kotlin.fir.analysis.checkers.ConeTypeCompatibilityChecker.areCompatible
 import org.jetbrains.kotlin.fir.declarations.FirResolvePhase
 import org.jetbrains.kotlin.fir.expressions.FirCallableReferenceAccess
 import org.jetbrains.kotlin.fir.expressions.FirGetClassCall
@@ -89,6 +91,11 @@ internal class KtFirTypeProvider(
     override fun withNullability(type: KtType, newNullability: KtTypeNullability): KtType {
         require(type is KtFirType)
         return type.coneType.withNullability(newNullability.toConeNullability(), rootModuleSession.typeContext).asKtType()
+    }
+
+    override fun areCompatible(a: KtType, b: KtType): Boolean {
+        return listOf(a.coneType, b.coneType)
+            .areCompatible(analysisSession.rootModuleSession.typeContext) == ConeTypeCompatibilityChecker.Compatibility.COMPATIBLE
     }
 }
 
