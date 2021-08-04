@@ -1,3 +1,4 @@
+// IGNORE_BACKEND: JVM_IR
 fun compareTo(first: Char, second: Char) = first.compareTo(second)
 
 fun plus(first: Char, second: Int) = first.plus(second)

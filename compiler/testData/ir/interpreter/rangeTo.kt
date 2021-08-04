@@ -1,3 +1,4 @@
+// IGNORE_BACKEND: JVM_IR
 const val range = (1..10).<!EVALUATED: `1`!>first<!>
 
 @CompileTimeCalculation

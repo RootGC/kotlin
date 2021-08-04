@@ -1,3 +1,4 @@
+// IGNORE_BACKEND: JVM_IR
 @CompileTimeCalculation fun compareTo(value: Long, other: Byte) = value.compareTo(other)
 @CompileTimeCalculation fun compareTo(value: Long, other: Short) = value.compareTo(other)
 @CompileTimeCalculation fun compareTo(value: Long, other: Int) = value.compareTo(other)
